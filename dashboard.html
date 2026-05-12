@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Status Dashboard</title>
+<style>
+:root{
+  --g:#3B6D11;--gl:#EAF3DE;--gm:#C0DD97;--gd:#27500A;
+  --bg:#F7F6F2;--surface:#FFFFFF;
+  --text:#1a1a18;--text2:#5a5a55;--text3:#a0a098;
+  --border:rgba(0,0,0,0.09);--rule:rgba(0,0,0,0.06);
+  --red-bg:#FCEBEB;--red-text:#791F1F;--red-border:#F09595;
+  --amber-bg:#FAEEDA;--amber-text:#633806;--amber-border:#FAC775;
+  --blue-bg:#EDF4FB;--blue-text:#1a5276;--blue-border:#aed6f1;
+  --purple-bg:#F4ECF7;--purple-text:#6c3483;--purple-border:#d2b4de;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --serif:Georgia,'Times New Roman',serif;
+  --radius:12px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);font-family:var(--sans);font-size:14px;color:var(--text);min-height:100vh;}
+
+/* ── Header ── */
+.header{background:var(--surface);border-bottom:0.5px solid var(--border);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:10;}
+.header-left{}
+.header-name{font-size:18px;font-weight:500;color:var(--text);}
+.header-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+.header-right{display:flex;align-items:center;gap:16px;}
+.last-updated{font-size:11px;color:var(--text3);}
+.refresh-btn{font-size:12px;background:none;border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:5px 12px;cursor:pointer;color:var(--text2);}
+.refresh-btn:hover{background:var(--bg);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--g);display:inline-block;margin-right:5px;animation:livepulse 2.5s infinite;}
+@keyframes livepulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+
+/* ── Layout ── */
+.main{max-width:960px;margin:0 auto;padding:2rem 1.5rem;}
+.section-title{font-size:10px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+.mb{margin-bottom:1.5rem;}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;}
+.card-label{font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;}
+.card-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:4px;}
+
+/* ── Stat chips ── */
+.stat-row{display:flex;gap:1rem;margin-bottom:1.5rem;}
+.stat{flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;}
+.stat-val{font-size:28px;font-weight:500;color:var(--text);line-height:1;margin-bottom:4px;}
+.stat-lbl{font-size:11px;color:var(--text3);}
+.stat.accent{border-color:var(--gm);background:var(--gl);}
+.stat.accent .stat-val{color:var(--g);}
+.stat.accent .stat-lbl{color:var(--gd);}
+
+/* ── Big 3 rows ── */
+.b3-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--rule);}
+.b3-row:last-child{border-bottom:none;}
+.b3-num{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--text3);flex-shrink:0;}
+.b3-num.done{background:var(--g);border-color:var(--g);color:#fff;}
+.b3-text{flex:1;font-family:var(--serif);font-size:15px;color:var(--text);}
+.b3-text.done{text-decoration:line-through;color:var(--text3);}
+.b3-empty{font-size:13px;color:var(--text3);font-style:italic;padding:8px 0;}
+
+/* ── Progress bar ── */
+.prog-wrap{margin-top:12px;}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:5px;}
+.prog-bar{height:6px;background:var(--rule);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--g);border-radius:3px;transition:width 0.4s;}
+.prog-fill.partial{background:var(--gm);}
+
+/* ── Task table ── */
+.task-table{width:100%;border-collapse:collapse;}
+.task-table th{font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);text-align:left;padding:0 0 8px;border-bottom:0.5px solid var(--border);}
+.task-table td{padding:9px 0;border-bottom:0.5px solid var(--rule);vertical-align:middle;}
+.task-table tr:last-child td{border-bottom:none;}
+.task-name{font-family:var(--serif);font-size:14px;color:var(--text);}
+.task-name.dimmed{color:var(--text3);text-decoration:line-through;}
+.task-empty{font-size:13px;color:var(--text3);font-style:italic;padding:10px 0;display:block;}
+
+/* ── Status badges ── */
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 9px;border-radius:99px;white-space:nowrap;}
+.badge-done{background:var(--gl);color:var(--gd);border:0.5px solid var(--gm);}
+.badge-waiting{background:var(--blue-bg);color:var(--blue-text);border:0.5px solid var(--blue-border);}
+.badge-delegated{background:var(--purple-bg);color:var(--purple-text);border:0.5px solid var(--purple-border);}
+.badge-deferred{background:var(--amber-bg);color:var(--amber-text);border:0.5px solid var(--amber-border);}
+.badge-deleted{background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red-border);}
+.badge-none{background:var(--bg);color:var(--text3);border:0.5px solid var(--border);}
+
+/* ── Weekly row ── */
+.wb3-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--rule);}
+.wb3-row:last-child{border-bottom:none;}
+.wb3-num{font-size:11px;font-weight:500;color:var(--text3);width:18px;flex-shrink:0;padding-top:2px;}
+.wb3-text{flex:1;font-family:var(--serif);font-size:14px;color:var(--text);line-height:1.4;}
+.wb3-text.done{text-decoration:line-through;color:var(--text3);}
+
+/* ── Notes block ── */
+.notes-block{font-family:var(--serif);font-size:14px;color:var(--text2);line-height:1.8;white-space:pre-wrap;padding:4px 0;}
+.notes-empty{font-size:13px;color:var(--text3);font-style:italic;}
+
+/* ── Date header ── */
+.date-header{display:flex;align-items:baseline;gap:12px;margin-bottom:1.75rem;}
+.date-big{font-family:var(--serif);font-size:24px;font-weight:normal;color:var(--text);}
+.date-week{font-size:12px;color:var(--text3);}
+
+/* ── Not configured ── */
+.not-configured{max-width:520px;margin:4rem auto;text-align:center;padding:2rem;}
+.not-configured h2{font-size:18px;font-weight:500;margin-bottom:8px;color:var(--text);}
+.not-configured p{font-size:13px;color:var(--text2);line-height:1.7;}
+
+/* ── Loading ── */
+.loading{text-align:center;padding:4rem 2rem;color:var(--text3);font-size:13px;}
+
+/* ── Footer ── */
+.footer{text-align:center;padding:2rem;font-size:11px;color:var(--text3);}
+
+@media(max-width:640px){
+  .grid-2,.grid-3,.stat-row{grid-template-columns:1fr;flex-direction:column;}
+  .main{padding:1rem;}
+  .header{padding:1rem;}
+}
+</style>
+</head>
+<body>
+
+<div id="not-configured" class="not-configured" style="display:none;">
+  <h2>Firebase not configured</h2>
+  <p>To use this dashboard, open the file in a text editor and paste your Firebase config into the <code>FIREBASE_CONFIG</code> block — the same config you used in your planner. Then host both files on GitHub Pages.</p>
+</div>
+
+<div id="loading" class="loading">Loading…</div>
+
+<div id="app" style="display:none;">
+  <header class="header">
+    <div class="header-left">
+      <div class="header-name" id="h-name">Status Dashboard</div>
+      <div class="header-sub" id="h-sub"></div>
+    </div>
+    <div class="header-right">
+      <span class="last-updated" id="last-updated"></span>
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="date-header">
+      <div class="date-big" id="d-date"></div>
+      <div class="date-week" id="d-week"></div>
+    </div>
+
+    <!-- Stat chips -->
+    <div class="stat-row" id="stat-row">
+      <div class="stat accent">
+        <div class="stat-val" id="s-b3done">—</div>
+        <div class="stat-lbl">Daily Big 3 Complete</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="s-tasks-done">—</div>
+        <div class="stat-lbl">Tasks Done Today</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="s-tasks-total">—</div>
+        <div class="stat-lbl">Total Tasks</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="s-wb3done">—</div>
+        <div class="stat-lbl">Weekly Big 3 Complete</div>
+      </div>
+    </div>
+
+    <!-- Daily Big 3 -->
+    <div class="mb">
+      <div class="section-title">Today's Big 3</div>
+      <div class="card">
+        <div id="d-b3"></div>
+        <div class="prog-wrap">
+          <div class="prog-label"><span>Progress</span><span id="b3-pct-label">0%</span></div>
+          <div class="prog-bar"><div class="prog-fill" id="b3-prog" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="mb">
+      <div class="section-title">Today's Tasks</div>
+      <div class="card">
+        <table class="task-table">
+          <thead><tr>
+            <th style="width:55%;">Task</th>
+            <th style="width:20%;">Status</th>
+            <th style="width:25%;"></th>
+          </tr></thead>
+          <tbody id="d-tasks"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Weekly Big 3 -->
+    <div class="grid-2" style="align-items:start;">
+      <div>
+        <div class="section-title">This Week's Big 3</div>
+        <div class="card">
+          <div id="d-wb3"></div>
+          <div class="prog-wrap">
+            <div class="prog-label"><span>Weekly progress</span><span id="wb3-pct-label">0%</span></div>
+            <div class="prog-bar"><div class="prog-fill" id="wb3-prog" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title">Today's Notes</div>
+        <div class="card" style="min-height:120px;">
+          <div id="d-notes"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="footer">
+    <span class="live-dot"></span> Live data · Refreshes automatically every 5 minutes
+  </div>
+</div>
+
+<script type="module">
+// ── PASTE YOUR FIREBASE CONFIG HERE (same as in full-focus-planner.html) ──
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDLedFwX1OG3ETyzFO9ywS_L2h_IwX15No",
+  authDomain:        "full-focus-planner-5033d.firebaseapp.com",
+  projectId:         "full-focus-planner-5033d",
+  storageBucket:     "full-focus-planner-5033d.firebasestorage.app",
+  messagingSenderId: "1099483054008",
+  appId:             "1:1099483054008:web:a0fdb3f351cf370598594d"
+};
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── Config ────────────────────────────────────────────────────────────────
+// Change this to your name
+const YOUR_NAME = "Jared";
+
+const IS_CONFIGURED = FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
+
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const STATUS_LABELS=['In Progress','Done','Waiting','Delegated','Deferred','Deleted'];
+const STATUS_CLASSES=['badge-none','badge-done','badge-waiting','badge-delegated','badge-deferred','badge-deleted'];
+
+const now=new Date();
+function dateKey(d){return`daily-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;}
+function weekStart(){const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return d;}
+function weekKey(){const s=weekStart();return`weekly-${s.getFullYear()}-${s.getMonth()+1}-${s.getDate()}`;}
+function weekRange(){
+  const s=weekStart();const e=new Date(s);e.setDate(e.getDate()+6);
+  return MONTHS[s.getMonth()]+' '+s.getDate()+' – '+MONTHS[e.getMonth()]+' '+e.getDate();
+}
+
+if(!IS_CONFIGURED){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('not-configured').style.display='block';
+} else {
+  let db,_doc,_getDoc;
+  try{
+    const {initializeApp}=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const fs=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    db=fs.getFirestore(initializeApp(FIREBASE_CONFIG));
+    _doc=fs.doc; _getDoc=fs.getDoc;
+  }catch(e){
+    document.getElementById('loading').textContent='Could not connect to Firebase. Check your config.';
+    console.error(e);
+  }
+
+  async function fsLoad(key){
+    try{
+      const snap=await _getDoc(_doc(db,'planner',key));
+      return snap.exists()?snap.data().v:null;
+    }catch(e){console.error(e);return null;}
+  }
+
+  function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  window.loadData=async()=>{
+    const[daily,weekly]=await Promise.all([
+      fsLoad(dateKey(now)),
+      fsLoad(weekKey())
+    ]);
+
+    // Header
+    document.getElementById('h-name').textContent=YOUR_NAME+"'s Status Dashboard";
+    document.getElementById('h-sub').textContent='As of '+DAYS[now.getDay()]+', '+MONTHS[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
+    document.getElementById('d-date').textContent=DAYS[now.getDay()]+', '+MONTHS[now.getMonth()]+' '+now.getDate();
+    document.getElementById('d-week').textContent='Week of '+weekRange();
+    document.getElementById('last-updated').textContent='Updated '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+    // ── Daily Big 3 ──
+    const b3=daily?.b3||[];
+    const b3done=b3.filter(b=>b.done).length;
+    const b3pct=b3.length?Math.round(b3done/3*100):0;
+    document.getElementById('s-b3done').textContent=b3done+' / 3';
+    document.getElementById('b3-pct-label').textContent=b3pct+'%';
+    document.getElementById('b3-prog').style.width=b3pct+'%';
+    document.getElementById('b3-prog').className='prog-fill'+(b3pct===100?'':' partial');
+
+    const b3wrap=document.getElementById('d-b3');
+    if(!b3.some(b=>b.text)){
+      b3wrap.innerHTML='<div class="b3-empty">No Big 3 set for today.</div>';
+    } else {
+      b3wrap.innerHTML=b3.map((b,i)=>b.text?`
+        <div class="b3-row">
+          <div class="b3-num${b.done?' done':''}">${b.done?'✓':(i+1)}</div>
+          <div class="b3-text${b.done?' done':''}">${esc(b.text)}</div>
+        </div>`:''
+      ).join('');
+    }
+
+    // ── Tasks ──
+    const tasks=daily?.tasks||[];
+    const tasksDone=tasks.filter(t=>t.status===1).length;
+    document.getElementById('s-tasks-done').textContent=tasksDone;
+    document.getElementById('s-tasks-total').textContent=tasks.length;
+
+    const tbody=document.getElementById('d-tasks');
+    if(!tasks.length){
+      tbody.innerHTML='<tr><td colspan="3"><span class="task-empty">No tasks added today.</span></td></tr>';
+    } else {
+      const active=tasks.filter(t=>t.status!==5); // exclude deleted
+      tbody.innerHTML=active.map(t=>{
+        const si=t.status||0;
+        const dimmed=si===4||si===5;
+        return`<tr>
+          <td><span class="task-name${dimmed?' dimmed':''}">${esc(t.text||'—')}</span></td>
+          <td><span class="badge ${STATUS_CLASSES[si]}">${STATUS_LABELS[si]}</span></td>
+          <td></td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ── Weekly Big 3 ──
+    const wb3=weekly?.wb3||[];
+    const wb3done=wb3.filter(b=>b.done).length;
+    const wb3pct=wb3.some(b=>b.text)?Math.round(wb3done/3*100):0;
+    document.getElementById('s-wb3done').textContent=wb3done+' / 3';
+    document.getElementById('wb3-pct-label').textContent=wb3pct+'%';
+    document.getElementById('wb3-prog').style.width=wb3pct+'%';
+    document.getElementById('wb3-prog').className='prog-fill'+(wb3pct===100?'':' partial');
+
+    const wb3wrap=document.getElementById('d-wb3');
+    if(!wb3.some(b=>b.text)){
+      wb3wrap.innerHTML='<div class="b3-empty">No weekly Big 3 set yet.</div>';
+    } else {
+      wb3wrap.innerHTML=wb3.map((b,i)=>b.text?`
+        <div class="wb3-row">
+          <div class="wb3-num">${i+1}</div>
+          <div class="wb3-text${b.done?' done':''}">${esc(b.text)}</div>
+          ${b.done?'<span class="badge badge-done">✓</span>':''}
+        </div>`:''
+      ).join('');
+    }
+
+    // ── Notes ──
+    const notes=(daily?.notes||'').trim();
+    const nwrap=document.getElementById('d-notes');
+    nwrap.innerHTML=notes
+      ?`<div class="notes-block">${esc(notes)}</div>`
+      :`<div class="notes-empty">No notes today.</div>`;
+
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+  };
+
+  loadData();
+  // Auto-refresh every 5 minutes
+  setInterval(loadData, 5 * 60 * 1000);
+}
+</script>
+</body>
+</html>
