@@ -488,17 +488,17 @@ const FIREBASE_CONFIG = {
 
 <script type="module">
 // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyDLedFwX1OG3ETyzFO9ywS_L2h_IwX15No",
-  authDomain: "full-focus-planner-5033d.firebaseapp.com",
-  projectId: "full-focus-planner-5033d",
-  storageBucket: "full-focus-planner-5033d.firebasestorage.app",
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDLedFwX1OG3ETyzFO9ywS_L2h_IwX15No",
+  authDomain:        "full-focus-planner-5033d.firebaseapp.com",
+  projectId:         "full-focus-planner-5033d",
+  storageBucket:     "full-focus-planner-5033d.firebasestorage.app",
   messagingSenderId: "1099483054008",
-  appId: "1:1099483054008:web:a0fdb3f351cf370598594d"
+  appId:             "1:1099483054008:web:a0fdb3f351cf370598594d"
 };
 // ─────────────────────────────────────────────────────────────────────────
 
-const IS_CONFIGURED = firebaseConfig.apiKey !== "AIzaSyDLedFwX1OG3ETyzFO9ywS_L2h_IwX15No";
+const IS_CONFIGURED = FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
 let db = null, _doc, _getDoc, _setDoc;
 
 if (IS_CONFIGURED) {
