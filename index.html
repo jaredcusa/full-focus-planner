@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Full Focus Planner</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css" />
+<style>
+:root {
+  --g:#3B6D11;--gl:#EAF3DE;--gm:#C0DD97;--gd:#27500A;
+  --bg:#F7F6F2;--surface:#FFFFFF;
+  --text:#1a1a18;--text2:#5a5a55;--text3:#a0a098;
+  --border:rgba(0,0,0,0.10);--rule:rgba(0,0,0,0.06);
+  --radius:12px;--radius-sm:8px;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --amber-bg:#FAEEDA;--amber-text:#633806;--amber-border:#FAC775;
+  --red-bg:#FCEBEB;--red-text:#791F1F;--red-border:#F09595;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:15px;min-height:100vh;}
+
+#setup-banner{background:#1a1a18;color:#f0efe9;font-family:var(--sans);padding:1rem 2rem;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+#setup-banner strong{color:#fff;font-size:13px;}
+#setup-banner span{font-size:12px;color:#aaa;}
+#setup-banner.hidden{display:none;}
+
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:0.5px solid var(--border);padding:2rem 1rem;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.main{flex:1;padding:2rem 2.5rem;max-width:920px;}
+
+.sidebar-logo{font-family:var(--sans);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text3);margin-bottom:1.5rem;padding-left:10px;}
+.sidebar-logo span{display:block;font-family:var(--serif);font-size:17px;letter-spacing:0;color:var(--text);margin-top:4px;}
+.nav-section{font-family:var(--sans);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text3);padding:12px 10px 6px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--sans);font-size:13px;color:var(--text2);border:none;background:none;width:100%;text-align:left;transition:all 0.12s;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:var(--gl);color:var(--gd);font-weight:500;}
+
+.sidebar-footer{margin-top:auto;padding:8px 10px;font-family:var(--sans);font-size:11px;color:var(--text3);}
+.sync-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);transition:background 0.3s;}
+.sync-dot.synced{background:var(--g);}
+.sync-dot.syncing{background:#EF9F27;animation:pulse 1s infinite;}
+.sync-dot.error{background:#E24B4A;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+.page-header{margin-bottom:2rem;}
+.page-title{font-family:var(--serif);font-size:26px;font-weight:normal;color:var(--text);}
+.page-sub{font-family:var(--sans);font-size:12px;color:var(--text3);margin-top:4px;}
+
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.card-icon{font-size:15px;color:var(--g);}
+.card-label{font-family:var(--sans);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--text3);font-weight:500;}
+.card-aside{margin-left:auto;font-family:var(--sans);font-size:11px;padding:2px 9px;border-radius:99px;background:var(--gl);color:var(--gd);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+
+.ruled-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--rule);}
+.ruled-row:last-child{border-bottom:none;}
+.num-label{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--text3);width:14px;flex-shrink:0;}
+
+.circle{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.15s;color:transparent;font-size:12px;}
+.circle.on{background:var(--g);border-color:var(--g);color:#fff;}
+.sq{width:7px;height:7px;border-radius:50%;background:var(--border);display:inline-block;cursor:pointer;flex-shrink:0;transition:all 0.15s;margin-top:1px;}
+.sq.on{background:var(--g);}
+
+.ruled-input{flex:1;border:none;background:none;font-family:var(--serif);font-size:15px;color:var(--text);outline:none;}
+.ruled-input::placeholder{color:var(--text3);}
+.ruled-input.struck{text-decoration:line-through;color:var(--text3);}
+.sm-input{flex:1;border:none;background:none;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;}
+.sm-input::placeholder{color:var(--text3);}
+.sm-input.struck{text-decoration:line-through;color:var(--text3);}
+.sched-time{font-family:var(--sans);font-size:11px;color:var(--text3);width:44px;flex-shrink:0;font-weight:500;}
+.sched-in{flex:1;border:none;background:none;font-family:var(--serif);font-size:13px;color:var(--text);outline:none;}
+.sched-in::placeholder{color:var(--text3);}
+.notes-ta{width:100%;border:none;background:none;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;resize:none;line-height:2.1;background-image:repeating-linear-gradient(transparent,transparent calc(2.1em - 1px),var(--rule) calc(2.1em - 1px),var(--rule) 2.1em);min-height:90px;}
+.notes-ta::placeholder{color:var(--text3);}
+.plain-input{width:100%;border:none;border-bottom:0.5px solid var(--rule);background:none;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;padding:8px 0;}
+.plain-input::placeholder{color:var(--text3);}
+
+.progress-strip{height:3px;background:var(--gm);border-radius:2px;margin-top:14px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--g);border-radius:2px;transition:width 0.3s;}
+
+.task-priority{font-family:var(--sans);font-size:10px;padding:1px 7px;border-radius:99px;border:0.5px solid var(--border);cursor:pointer;color:var(--text3);background:none;flex-shrink:0;}
+.task-priority.high{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border);}
+.task-priority.medium{background:var(--amber-bg);color:var(--amber-text);border-color:var(--amber-border);}
+.task-priority.low{background:var(--gl);color:var(--gd);border-color:var(--gm);}
+.task-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:0 2px;opacity:0;transition:opacity 0.15s;flex-shrink:0;}
+.ruled-row:hover .task-del{opacity:1;}
+.add-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:0.5px solid var(--rule);margin-top:4px;}
+.add-btn{font-family:var(--sans);font-size:12px;color:var(--g);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;}
+.win-dot{width:6px;height:6px;border-radius:50%;background:var(--g);flex-shrink:0;}
+
+.q-tabs{display:flex;gap:6px;margin-bottom:1.5rem;}
+.q-tab{font-family:var(--sans);font-size:12px;padding:5px 16px;border-radius:99px;border:0.5px solid var(--border);background:none;cursor:pointer;color:var(--text2);}
+.q-tab.active{background:var(--g);color:#fff;border-color:var(--g);}
+.q-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:0.75rem;}
+.q-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem;}
+.q-pill{font-family:var(--sans);font-size:11px;padding:3px 10px;border-radius:99px;background:var(--gl);color:var(--gd);font-weight:500;}
+
+.goal-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:0.75rem;}
+.goal-number{font-family:var(--sans);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.goal-title-input{width:100%;border:none;background:none;font-family:var(--serif);font-size:16px;color:var(--text);outline:none;margin-bottom:8px;}
+.goal-title-input::placeholder{color:var(--text3);}
+.goal-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.goal-tag{font-family:var(--sans);font-size:11px;padding:3px 10px;border-radius:99px;border:0.5px solid var(--border);cursor:pointer;color:var(--text2);background:none;}
+.goal-tag.active{background:var(--gl);color:var(--gd);border-color:var(--gm);}
+.goal-notes{width:100%;border:none;background:none;font-family:var(--sans);font-size:13px;color:var(--text2);outline:none;resize:none;line-height:1.6;min-height:40px;border-top:0.5px solid var(--rule);padding-top:8px;}
+.goal-notes::placeholder{color:var(--text3);}
+.goal-progress-wrap{display:flex;align-items:center;gap:10px;margin-top:10px;}
+.goal-progress-bar{flex:1;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;}
+.goal-progress-fill{height:100%;background:var(--g);border-radius:2px;transition:width 0.3s;}
+.goal-pct-input{width:44px;font-family:var(--sans);font-size:11px;color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 4px;text-align:center;background:none;}
+
+.ritual-pill{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:var(--radius-sm);border:0.5px solid var(--border);cursor:pointer;transition:all 0.15s;margin-bottom:6px;}
+.ritual-pill.on{border-color:var(--g);background:var(--gl);}
+.ritual-pill.on .rp-label{color:var(--gd);}
+.ritual-pill.on .rp-icon{color:var(--g);}
+.rp-icon{font-size:14px;color:var(--text3);}
+.rp-label{font-family:var(--serif);font-size:14px;color:var(--text2);}
+.section-note{font-family:var(--sans);font-size:11px;color:var(--text3);margin-bottom:12px;font-style:italic;}
+
+/* Setup guide */
+.guide-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.5rem 2rem;margin-bottom:1rem;}
+.guide-card h3{font-family:var(--sans);font-size:14px;font-weight:500;color:var(--text);margin-bottom:1rem;padding-bottom:8px;border-bottom:0.5px solid var(--rule);}
+.guide-step{display:flex;gap:14px;margin-bottom:14px;}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--g);color:#fff;font-family:var(--sans);font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.step-title{font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;}
+.step-desc{font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;}
+.step-desc code{background:var(--bg);border:0.5px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;color:var(--text);font-family:monospace;}
+.config-block{background:#1a1a18;color:#a8d5a2;font-family:monospace;font-size:12px;border-radius:var(--radius-sm);padding:1rem 1.25rem;margin:10px 0;line-height:1.9;overflow-x:auto;white-space:pre;}
+.ck{color:#7dd3fc;}.cv{color:#fde68a;}.cc{color:#6b7280;}
+
+.page{display:none;}
+.page.active{display:block;}
+
+@media(max-width:700px){
+  .shell{flex-direction:column;}
+  .sidebar{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;padding:0.75rem;gap:2px;border-right:none;border-bottom:0.5px solid var(--border);}
+  .sidebar-logo,.nav-section,.sidebar-footer{display:none;}
+  .nav-item{width:auto;font-size:11px;padding:6px 10px;}
+  .main{padding:1rem;}
+  .two-col{grid-template-columns:1fr;}
+  .page-title{font-size:20px;}
+}
+</style>
+</head>
+<body>
+
+<div id="setup-banner">
+  <strong>Firebase not configured</strong>
+  <span>Running on local storage only — data won't sync between devices until you complete the Setup Guide.</span>
+</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-logo">Full Focus<span>Planner</span></div>
+    <div class="nav-section">Daily</div>
+    <button class="nav-item active" onclick="showPage('today',this)">Today</button>
+    <div class="nav-section">Weekly</div>
+    <button class="nav-item" onclick="showPage('weekly',this)">Weekly Preview</button>
+    <div class="nav-section">Goals</div>
+    <button class="nav-item" onclick="showPage('quarterly',this)">Quarterly Big 3</button>
+    <button class="nav-item" onclick="showPage('annual',this)">Annual Goals</button>
+    <div class="nav-section">Setup</div>
+    <button class="nav-item" onclick="showPage('rituals',this)">Rituals</button>
+    <button class="nav-item" onclick="showPage('setup',this)">Setup Guide</button>
+    <div class="sidebar-footer">
+      <div class="sync-row"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">Local only</span></div>
+      <div id="sidebar-date"></div>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- TODAY -->
+    <div class="page active" id="pg-today">
+      <div class="page-header">
+        <div class="page-title" id="today-title"></div>
+        <div class="page-sub">What are your three most important things today?</div>
+      </div>
+      <div class="card">
+        <div class="card-top"><i class="ti ti-star card-icon"></i><span class="card-label">Daily Big 3</span><span class="card-aside" id="b3ct">0 of 3</span></div>
+        <div id="b3-wrap"></div>
+        <div class="progress-strip"><div class="progress-fill" id="b3-bar" style="width:0%"></div></div>
+      </div>
+      <div class="two-col">
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-top"><i class="ti ti-clock card-icon"></i><span class="card-label">Schedule</span></div>
+          <div id="sched-wrap"></div>
+        </div>
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-top"><i class="ti ti-list card-icon"></i><span class="card-label">Tasks</span><span class="card-aside" id="task-ct" style="display:none;"></span></div>
+          <div id="task-wrap"></div>
+          <div class="add-row"><button class="add-btn" onclick="addTask()"><i class="ti ti-plus"></i> Add task</button></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-top"><i class="ti ti-notes card-icon"></i><span class="card-label">Notes</span></div>
+        <textarea class="notes-ta" id="daily-notes" rows="6"></textarea>
+      </div>
+    </div>
+
+    <!-- WEEKLY -->
+    <div class="page" id="pg-weekly">
+      <div class="page-header"><div class="page-title">Weekly Preview</div><div class="page-sub">Reflect on last week. Set up the next one.</div></div>
+      <div class="card">
+        <div class="card-top"><i class="ti ti-trophy card-icon"></i><span class="card-label">Weekly wins (3–5)</span></div>
+        <div id="wins-wrap"></div>
+      </div>
+      <div class="two-col">
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-top"><i class="ti ti-thumb-up card-icon"></i><span class="card-label">What worked?</span></div>
+          <textarea class="notes-ta" id="w-worked" rows="5" placeholder="What went well this week?"></textarea>
+        </div>
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-top"><i class="ti ti-thumb-down card-icon"></i><span class="card-label">What to change?</span></div>
+          <textarea class="notes-ta" id="w-change" rows="5" placeholder="What to stop or adjust?"></textarea>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-top"><i class="ti ti-arrow-right card-icon"></i><span class="card-label">Weekly Big 3 — next week</span></div>
+        <div class="section-note">Connect these to your Quarterly Big 3.</div>
+        <div id="wb3-wrap"></div>
+      </div>
+      <div class="two-col" style="margin-top:1rem;">
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-top"><i class="ti ti-calendar card-icon"></i><span class="card-label">Deadlines & events</span></div>
+          <div id="dl-wrap"></div>
+        </div>
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-top"><i class="ti ti-heart card-icon"></i><span class="card-label">Self-care</span></div>
+          <textarea class="notes-ta" id="w-selfcare" rows="5" placeholder="Rest, rejuvenation, personal time…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUARTERLY -->
+    <div class="page" id="pg-quarterly">
+      <div class="page-header"><div class="page-title">Quarterly Big 3</div><div class="page-sub">Up to 3 goals per quarter, tied to your annual goals.</div></div>
+      <div class="q-tabs">
+        <button class="q-tab active" onclick="switchQ(1,this)">Q1</button>
+        <button class="q-tab" onclick="switchQ(2,this)">Q2</button>
+        <button class="q-tab" onclick="switchQ(3,this)">Q3</button>
+        <button class="q-tab" onclick="switchQ(4,this)">Q4</button>
+      </div>
+      <div id="q-content"></div>
+    </div>
+
+    <!-- ANNUAL -->
+    <div class="page" id="pg-annual">
+      <div class="page-header"><div class="page-title">Annual Goals</div><div class="page-sub">Up to 8 goals for the year. Be specific — what does done look like?</div></div>
+      <div id="annual-wrap"></div>
+      <button class="add-btn" id="add-goal-btn" onclick="addAnnualGoal()" style="margin-top:0.5rem;"><i class="ti ti-plus"></i> Add goal</button>
+    </div>
+
+    <!-- RITUALS -->
+    <div class="page" id="pg-rituals">
+      <div class="page-header"><div class="page-title">Daily Rituals</div><div class="page-sub">Set once. Four rituals that bookend your day.</div></div>
+      <div class="card">
+        <div class="card-top"><i class="ti ti-sun card-icon"></i><span class="card-label">Morning ritual</span></div>
+        <div class="section-note">Press Enter to add a custom step.</div>
+        <div id="r-morning"></div>
+      </div>
+      <div class="two-col">
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-top"><i class="ti ti-player-play card-icon"></i><span class="card-label">Workday startup</span></div>
+          <div id="r-startup"></div>
+        </div>
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-top"><i class="ti ti-player-pause card-icon"></i><span class="card-label">Workday shutdown</span></div>
+          <div id="r-shutdown"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-top"><i class="ti ti-moon card-icon"></i><span class="card-label">Evening ritual</span></div>
+        <div id="r-evening"></div>
+      </div>
+    </div>
+
+    <!-- SETUP GUIDE -->
+    <div class="page" id="pg-setup">
+      <div class="page-header"><div class="page-title">Setup Guide</div><div class="page-sub">Connect Firebase + GitHub Pages so your planner syncs across every device.</div></div>
+
+      <div class="guide-card">
+        <h3>Step 1 — Create a free Firebase project</h3>
+        <div class="guide-step"><div class="step-num">1</div><div><div class="step-title">Go to Firebase Console</div><div class="step-desc">Visit <code>console.firebase.google.com</code> and sign in with any Google account.</div></div></div>
+        <div class="guide-step"><div class="step-num">2</div><div><div class="step-title">Create a new project</div><div class="step-desc">Click <code>Add project</code>. Name it <code>full-focus-planner</code>. Disable Google Analytics when prompted. Click through to finish.</div></div></div>
+        <div class="guide-step"><div class="step-num">3</div><div><div class="step-title">Register a Web App</div><div class="step-desc">Inside your new project, click the <code>&lt;/&gt;</code> Web icon. Give it any nickname. You'll see a <code>firebaseConfig</code> object — copy those values, you'll paste them in Step 3.</div></div></div>
+        <div class="guide-step"><div class="step-num">4</div><div><div class="step-title">Enable Firestore Database</div><div class="step-desc">In the left sidebar go to <code>Build → Firestore Database</code>. Click <code>Create database</code>, choose <code>Start in test mode</code>, pick any region, click Enable. Done.</div></div></div>
+      </div>
+
+      <div class="guide-card">
+        <h3>Step 2 — Host on GitHub Pages (free)</h3>
+        <div class="guide-step"><div class="step-num">1</div><div><div class="step-title">Create a GitHub account</div><div class="step-desc">Go to <code>github.com</code> and sign up if you don't have one yet.</div></div></div>
+        <div class="guide-step"><div class="step-num">2</div><div><div class="step-title">Create a new repository</div><div class="step-desc">Click <code>New repository</code>. Name it <code>full-focus-planner</code>. Set to <code>Public</code>. Click <code>Create repository</code>.</div></div></div>
+        <div class="guide-step"><div class="step-num">3</div><div><div class="step-title">Upload this file</div><div class="step-desc">On the new repo page click <code>Add file → Upload files</code>. Upload this HTML file — rename it <code>index.html</code> first. Commit it.</div></div></div>
+        <div class="guide-step"><div class="step-num">4</div><div><div class="step-title">Enable GitHub Pages</div><div class="step-desc">Go to <code>Settings → Pages</code>. Under Source select <code>Deploy from a branch</code>, pick <code>main</code>, folder <code>/ (root)</code>. Save. In a minute your planner will be live at <code>yourusername.github.io/full-focus-planner</code>.</div></div></div>
+      </div>
+
+      <div class="guide-card">
+        <h3>Step 3 — Paste your Firebase config into the file</h3>
+        <div class="step-desc" style="margin-bottom:12px;">Open <code>index.html</code> in any text editor (Notepad on Windows, TextEdit on Mac, or VS Code). Find the <code>FIREBASE_CONFIG</code> block near the bottom of the file — it looks like this — and replace the placeholder values with your real ones from Step 1:</div>
+        <div class="config-block"><span class="cc">// ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────</span>
+const FIREBASE_CONFIG = {
+  <span class="ck">apiKey</span>:            <span class="cv">"YOUR_API_KEY"</span>,
+  <span class="ck">authDomain</span>:        <span class="cv">"YOUR_PROJECT_ID.firebaseapp.com"</span>,
+  <span class="ck">projectId</span>:         <span class="cv">"YOUR_PROJECT_ID"</span>,
+  <span class="ck">storageBucket</span>:     <span class="cv">"YOUR_PROJECT_ID.appspot.com"</span>,
+  <span class="ck">messagingSenderId</span>: <span class="cv">"YOUR_SENDER_ID"</span>,
+  <span class="ck">appId</span>:             <span class="cv">"YOUR_APP_ID"</span>
+};</div>
+        <div class="step-desc">Save the file, then re-upload it to GitHub (same steps as before — it replaces the old one). GitHub Pages updates within about 60 seconds.</div>
+      </div>
+
+      <div class="guide-card">
+        <h3>Step 4 — Open on every device</h3>
+        <div class="step-desc">Bookmark <code>yourusername.github.io/full-focus-planner</code> on your desktop, laptop, and phone. On mobile, add it to your home screen for an app feel:</div>
+        <br/>
+        <div class="step-desc"><strong style="color:var(--text);">iPhone/Safari:</strong> Tap the Share icon → <code>Add to Home Screen</code></div>
+        <br/>
+        <div class="step-desc"><strong style="color:var(--text);">Android/Chrome:</strong> Tap the menu (⋮) → <code>Add to Home Screen</code></div>
+        <br/>
+        <div class="step-desc" style="color:var(--text3);margin-top:8px;">Until Firebase is connected, all your data is saved locally in this browser. It won't be lost — it just won't sync to other devices yet.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+// ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+// ─────────────────────────────────────────────────────────────────────────
+
+const IS_CONFIGURED = FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
+let db = null, _doc, _getDoc, _setDoc;
+
+if (IS_CONFIGURED) {
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const fs = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    db = fs.getFirestore(initializeApp(FIREBASE_CONFIG));
+    _doc = fs.doc; _getDoc = fs.getDoc; _setDoc = fs.setDoc;
+    document.getElementById('setup-banner').classList.add('hidden');
+    syncStatus('synced','Firebase connected');
+  } catch(e) { console.error(e); syncStatus('error','Firebase error'); }
+}
+
+function syncStatus(state, label) {
+  document.getElementById('sync-dot').className = 'sync-dot' + (state ? ' '+state : '');
+  document.getElementById('sync-label').textContent = label;
+}
+
+async function storeLoad(key, fallback=null) {
+  if (db) {
+    try {
+      const snap = await _getDoc(_doc(db,'planner',key));
+      return snap.exists() ? snap.data().v : fallback;
+    } catch(e) { console.error(e); }
+  }
+  try { const v=localStorage.getItem('ffp-'+key); return v?JSON.parse(v):fallback; } catch { return fallback; }
+}
+
+async function storeSave(key, val) {
+  if (db) {
+    try {
+      syncStatus('syncing','Saving…');
+      await _setDoc(_doc(db,'planner',key),{v:val});
+      syncStatus('synced','Saved');
+      setTimeout(()=>syncStatus('synced','Synced'),1500);
+    } catch(e) { console.error(e); syncStatus('error','Save failed'); }
+  }
+  try { localStorage.setItem('ffp-'+key, JSON.stringify(val)); } catch {}
+}
+
+// ── Dates ─────────────────────────────────────────────────────────────────
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const now=new Date();
+const DATE_KEY=`daily-${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+function weekKey(){const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return`weekly-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;}
+const WEEK_KEY=weekKey();
+document.getElementById('today-title').textContent=DAYS[now.getDay()]+', '+MONTHS[now.getMonth()]+' '+now.getDate();
+document.getElementById('sidebar-date').textContent=MONTHS[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
+
+// ── Nav ───────────────────────────────────────────────────────────────────
+window.showPage=(id,btn)=>{
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+id).classList.add('active');
+  btn.classList.add('active');
+};
+
+let saveTimer=null;
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveAll,800);}
+
+// ── Big 3 ─────────────────────────────────────────────────────────────────
+let b3done=0;
+function buildBig3(saved){
+  const wrap=document.getElementById('b3-wrap');
+  wrap.innerHTML=''; b3done=0;
+  ['','',''].forEach((ph,i)=>{
+    const s=saved?.[i]??{text:'',done:false};
+    if(s.done) b3done++;
+    const row=document.createElement('div');
+    row.className='ruled-row';
+    row.innerHTML=`<span class="num-label">${i+1}</span><div class="circle${s.done?' on':''}"></div><input class="ruled-input${s.done?' struck':''}" value="${esc(s.text)}" />`;
+    const c=row.querySelector('.circle'),inp=row.querySelector('.ruled-input');
+    if(s.done) c.innerHTML='<i class="ti ti-check"></i>';
+    c.addEventListener('click',()=>{
+      const on=c.classList.toggle('on');
+      c.innerHTML=on?'<i class="ti ti-check"></i>':'';
+      inp.classList.toggle('struck',on);
+      b3done+=on?1:-1; updateB3(); scheduleSave();
+    });
+    inp.addEventListener('input',scheduleSave);
+    wrap.appendChild(row);
+  });
+  updateB3();
+}
+function updateB3(){
+  document.getElementById('b3ct').textContent=b3done+' of 3';
+  document.getElementById('b3-bar').style.width=Math.round(b3done/3*100)+'%';
+}
+function getB3(){
+  return [...document.getElementById('b3-wrap').querySelectorAll('.ruled-row')].map(r=>({
+    text:r.querySelector('.ruled-input').value, done:r.querySelector('.circle').classList.contains('on')
+  }));
+}
+
+// ── Schedule ──────────────────────────────────────────────────────────────
+const HRS=['5 am','6 am','7 am','8 am','9 am','10 am','11 am','12 pm','1 pm','2 pm','3 pm','4 pm','5 pm','6 pm','7 pm','8 pm'];
+function buildSched(saved){
+  const wrap=document.getElementById('sched-wrap');
+  wrap.innerHTML='';
+  HRS.forEach((h,i)=>{
+    const row=document.createElement('div');
+    row.className='ruled-row';
+    row.innerHTML=`<span class="sched-time">${h}</span><input class="sched-in" value="${esc(saved?.[i]??'')}" />`;
+    row.querySelector('.sched-in').addEventListener('input',scheduleSave);
+    wrap.appendChild(row);
+  });
+}
+function getSched(){return[...document.getElementById('sched-wrap').querySelectorAll('.sched-in')].map(i=>i.value);}
+
+// ── Tasks ─────────────────────────────────────────────────────────────────
+let tasks=[];
+const PL=['—','Low','Med','High'],PC=['','low','medium','high'];
+function renderTasks(){
+  const wrap=document.getElementById('task-wrap');
+  wrap.innerHTML='';
+  tasks.forEach((t,i)=>{
+    const row=document.createElement('div');
+    row.className='ruled-row';
+    row.innerHTML=`<div class="sq${t.done?' on':''}"></div>
+      <input class="sm-input${t.done?' struck':''}" placeholder="Task…" value="${esc(t.text||'')}" />
+      <button class="task-priority${t.priority?' '+PC[t.priority]:''}">${PL[t.priority||0]}</button>
+      <button class="task-del"><i class="ti ti-x"></i></button>`;
+    const sq=row.querySelector('.sq'),inp=row.querySelector('.sm-input'),pb=row.querySelector('.task-priority'),db=row.querySelector('.task-del');
+    if(t.done) sq.classList.add('on');
+    sq.addEventListener('click',()=>{tasks[i].done=!tasks[i].done;renderTasks();updateTaskBadge();scheduleSave();});
+    inp.addEventListener('input',()=>{tasks[i].text=inp.value;scheduleSave();});
+    pb.addEventListener('click',()=>{tasks[i].priority=((tasks[i].priority||0)+1)%4;renderTasks();scheduleSave();});
+    db.addEventListener('click',()=>{tasks.splice(i,1);renderTasks();updateTaskBadge();scheduleSave();});
+    wrap.appendChild(row);
+  });
+  updateTaskBadge();
+}
+window.addTask=()=>{
+  tasks.push({text:'',done:false,priority:0});
+  renderTasks();
+  document.getElementById('task-wrap').querySelectorAll('.sm-input')[tasks.length-1]?.focus();
+  scheduleSave();
+};
+function updateTaskBadge(){
+  const done=tasks.filter(t=>t.done).length;
+  const b=document.getElementById('task-ct');
+  if(done>0){b.style.display='inline-flex';b.textContent=done+' of '+tasks.length+' done';}
+  else b.style.display='none';
+}
+
+// ── Reusable list builders ────────────────────────────────────────────────
+function buildCircleList(wrapId,phs,saved){
+  const wrap=document.getElementById(wrapId);
+  wrap.innerHTML='';
+  phs.forEach((ph,i)=>{
+    const s=saved?.[i]??{text:'',done:false};
+    const row=document.createElement('div');
+    row.className='ruled-row';
+    row.innerHTML=`<span class="num-label">${i+1}</span><div class="circle${s.done?' on':''}"></div><input class="ruled-input${s.done?' struck':''}" placeholder="${ph}" value="${esc(s.text)}" />`;
+    const c=row.querySelector('.circle'),inp=row.querySelector('.ruled-input');
+    if(s.done) c.innerHTML='<i class="ti ti-check"></i>';
+    c.addEventListener('click',()=>{const on=c.classList.toggle('on');c.innerHTML=on?'<i class="ti ti-check"></i>':'';inp.classList.toggle('struck',on);scheduleSave();});
+    inp.addEventListener('input',scheduleSave);
+    wrap.appendChild(row);
+  });
+}
+function getCircleList(wrapId){
+  return[...document.getElementById(wrapId).querySelectorAll('.ruled-row')].map(r=>({
+    text:r.querySelector('.ruled-input').value,done:r.querySelector('.circle').classList.contains('on')
+  }));
+}
+function buildDotList(wrapId,count,ph,saved){
+  const wrap=document.getElementById(wrapId);
+  wrap.innerHTML='';
+  for(let i=0;i<count;i++){
+    const row=document.createElement('div');
+    row.className='ruled-row';
+    row.innerHTML=`<div class="win-dot"></div><input class="sm-input" placeholder="${ph}" value="${esc(saved?.[i]??'')}" />`;
+    row.querySelector('.sm-input').addEventListener('input',scheduleSave);
+    wrap.appendChild(row);
+  }
+}
+function getDotList(wrapId){return[...document.getElementById(wrapId).querySelectorAll('.sm-input')].map(i=>i.value);}
+
+// ── Quarterly ─────────────────────────────────────────────────────────────
+let currentQ=1;
+window.switchQ=(q,btn)=>{currentQ=q;document.querySelectorAll('.q-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderQ();};
+async function renderQ(){
+  const wrap=document.getElementById('q-content');
+  wrap.innerHTML='';
+  const qData=await storeLoad('quarterly',{});
+  const saved=qData['q'+currentQ]||[];
+  const annual=(await storeLoad('annual',[])).map((g,i)=>g.title||('Goal '+(i+1)));
+  for(let i=0;i<3;i++){
+    const s=saved[i]||{text:'',why:'',done:false,linkedGoal:''};
+    const card=document.createElement('div');
+    card.className='q-card';
+    const opts=annual.map((g,gi)=>`<option value="${gi}"${s.linkedGoal==gi?' selected':''}>${g.substring(0,50)}</option>`).join('');
+    card.innerHTML=`
+      <div class="q-header"><span class="q-pill">Q${currentQ} · ${i+1}</span><div class="circle${s.done?' on':''}" style="margin-left:auto;"></div></div>
+      <input class="plain-input" style="font-size:16px;font-family:var(--serif);" placeholder="Quarterly objective ${i+1}…" value="${esc(s.text)}" />
+      <div style="margin-top:10px;">
+        <label style="font-family:var(--sans);font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Linked annual goal</label>
+        <select class="goal-link" style="font-family:var(--sans);font-size:12px;border:0.5px solid var(--border);border-radius:6px;padding:4px 8px;background:var(--bg);color:var(--text2);width:100%;"><option value="">— select —</option>${opts}</select>
+      </div>
+      <div style="margin-top:10px;">
+        <label style="font-family:var(--sans);font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Why this matters</label>
+        <textarea class="plain-input" rows="2" style="resize:none;border:none;border-bottom:0.5px solid var(--rule);">${esc(s.why)}</textarea>
+      </div>`;
+    const c=card.querySelector('.circle');
+    if(s.done) c.innerHTML='<i class="ti ti-check"></i>';
+    c.addEventListener('click',()=>{c.classList.toggle('on');c.innerHTML=c.classList.contains('on')?'<i class="ti ti-check"></i>':'';saveQ();});
+    card.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('input',saveQ));
+    wrap.appendChild(card);
+  }
+}
+async function saveQ(){
+  const qData=await storeLoad('quarterly',{});
+  qData['q'+currentQ]=[...document.getElementById('q-content').querySelectorAll('.q-card')].map(card=>({
+    text:card.querySelectorAll('.plain-input')[0].value,
+    why:card.querySelectorAll('textarea')[0]?.value||'',
+    done:card.querySelector('.circle').classList.contains('on'),
+    linkedGoal:card.querySelector('.goal-link').value
+  }));
+  await storeSave('quarterly',qData);
+}
+
+// ── Annual Goals ──────────────────────────────────────────────────────────
+let annualGoals=[];
+const AREAS=['Work','Personal','Health','Finance','Relationships','Learning','Other'];
+function renderAnnual(){
+  const wrap=document.getElementById('annual-wrap');
+  wrap.innerHTML='';
+  annualGoals.forEach((g,i)=>{
+    const card=document.createElement('div');
+    card.className='goal-card';
+    card.innerHTML=`
+      <div class="goal-number">Goal ${i+1}</div>
+      <input class="goal-title-input" placeholder="What do you want to achieve this year?" value="${esc(g.title||'')}" />
+      <div class="goal-meta">${AREAS.map(a=>`<button class="goal-tag${g.area===a?' active':''}" data-area="${a}">${a}</button>`).join('')}</div>
+      <textarea class="goal-notes" rows="2" placeholder="Key motivation / why this matters…">${esc(g.notes||'')}</textarea>
+      <div class="goal-progress-wrap">
+        <span style="font-family:var(--sans);font-size:11px;color:var(--text3);">Progress</span>
+        <div class="goal-progress-bar"><div class="goal-progress-fill" style="width:${g.pct||0}%"></div></div>
+        <input class="goal-pct-input" type="number" min="0" max="100" value="${g.pct||0}" />%
+        <button style="margin-left:auto;background:none;border:none;color:var(--text3);font-size:12px;font-family:var(--sans);cursor:pointer;" onclick="removeGoal(${i})">Remove</button>
+      </div>`;
+    card.querySelectorAll('.goal-tag').forEach(btn=>btn.addEventListener('click',()=>{
+      annualGoals[i].area=btn.dataset.area;
+      card.querySelectorAll('.goal-tag').forEach(b=>b.classList.toggle('active',b===btn));
+      saveAnnual();
+    }));
+    card.querySelector('.goal-title-input').addEventListener('input',e=>{annualGoals[i].title=e.target.value;saveAnnual();});
+    card.querySelector('.goal-notes').addEventListener('input',e=>{annualGoals[i].notes=e.target.value;saveAnnual();});
+    card.querySelector('.goal-pct-input').addEventListener('input',e=>{
+      const v=Math.min(100,Math.max(0,parseInt(e.target.value)||0));
+      annualGoals[i].pct=v;
+      card.querySelector('.goal-progress-fill').style.width=v+'%';
+      saveAnnual();
+    });
+    wrap.appendChild(card);
+  });
+  document.getElementById('add-goal-btn').style.display=annualGoals.length>=8?'none':'flex';
+}
+window.addAnnualGoal=()=>{if(annualGoals.length>=8)return;annualGoals.push({title:'',notes:'',area:'',pct:0});renderAnnual();saveAnnual();};
+window.removeGoal=i=>{annualGoals.splice(i,1);renderAnnual();saveAnnual();};
+async function saveAnnual(){await storeSave('annual',annualGoals);}
+
+// ── Rituals ───────────────────────────────────────────────────────────────
+const RDEFS={
+  'r-morning': ['Review goals & quarterly Big 3','Journaling / gratitude','Exercise / movement','Read or learn something'],
+  'r-startup': ['Review calendar & Daily Big 3','Clear email inbox','Set top focus block','Review open tasks'],
+  'r-shutdown':['Log progress on Big 3','Process notes & next actions','Clear desk & close tabs','Write Big 3 for tomorrow'],
+  'r-evening': ['Disconnect from work','Family / personal time','Wind-down routine','Lights out time']
+};
+function buildRituals(saved){
+  Object.entries(RDEFS).forEach(([id,defaults])=>{
+    const wrap=document.getElementById(id);
+    wrap.innerHTML='';
+    const sdata=saved?.[id]??defaults.map(d=>({text:d,done:false}));
+    sdata.forEach(item=>{
+      const p=document.createElement('div');
+      p.className='ritual-pill'+(item.done?' on':'');
+      p.innerHTML=`<span style="width:7px;height:7px;border-radius:50%;background:currentColor;opacity:0.4;flex-shrink:0;display:inline-block;margin-right:1px;"></span><span class="rp-label">${esc(item.text)}</span>`;
+      p.addEventListener('click',()=>{p.classList.toggle('on');scheduleSave();});
+      wrap.appendChild(p);
+    });
+    const aw=document.createElement('div');
+    aw.style.cssText='display:flex;align-items:center;padding:8px 0;margin-top:2px;';
+    aw.innerHTML=`<input style="flex:1;border:none;border-bottom:0.5px solid var(--rule);background:none;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;padding:4px 0;" placeholder="Add a step and press Enter…" />`;
+    aw.querySelector('input').addEventListener('keydown',e=>{
+      if(e.key==='Enter'&&e.target.value.trim()){
+        sdata.push({text:e.target.value.trim(),done:false});
+        buildRituals({...getRitualData(),[id]:sdata});
+        scheduleSave();
+      }
+    });
+    wrap.appendChild(aw);
+  });
+}
+function getRitualData(){
+  const out={};
+  Object.keys(RDEFS).forEach(id=>{
+    out[id]=[...document.getElementById(id).querySelectorAll('.ritual-pill')].map(p=>({
+      text:p.querySelector('.rp-label').textContent,done:p.classList.contains('on')
+    }));
+  });
+  return out;
+}
+
+// ── Save / Load ───────────────────────────────────────────────────────────
+async function saveAll(){
+  await Promise.all([
+    storeSave(DATE_KEY,{b3:getB3(),sched:getSched(),tasks,notes:document.getElementById('daily-notes').value}),
+    storeSave(WEEK_KEY,{
+      wb3:getCircleList('wb3-wrap'),wins:getDotList('wins-wrap'),deadlines:getDotList('dl-wrap'),
+      worked:document.getElementById('w-worked').value,
+      change:document.getElementById('w-change').value,
+      selfcare:document.getElementById('w-selfcare').value
+    }),
+    storeSave('rituals',getRitualData())
+  ]);
+}
+
+async function loadAll(){
+  const [daily,weekly,rituals,annual]=await Promise.all([
+    storeLoad(DATE_KEY,{}), storeLoad(WEEK_KEY,{}), storeLoad('rituals',null), storeLoad('annual',[])
+  ]);
+  buildBig3(daily.b3??null);
+  buildSched(daily.sched??null);
+  tasks=daily.tasks??[]; renderTasks();
+  document.getElementById('daily-notes').value=daily.notes??'';
+  buildCircleList('wb3-wrap',['Key objective for next week…','Second weekly priority…','Third weekly objective…'],weekly.wb3??null);
+  buildDotList('wins-wrap',5,'A win from this week…',weekly.wins??null);
+  buildDotList('dl-wrap',4,'Deadline or event…',weekly.deadlines??null);
+  document.getElementById('w-worked').value=weekly.worked??'';
+  document.getElementById('w-change').value=weekly.change??'';
+  document.getElementById('w-selfcare').value=weekly.selfcare??'';
+  annualGoals=annual; renderAnnual();
+  await renderQ();
+  buildRituals(rituals);
+  ['daily-notes','w-worked','w-change','w-selfcare'].forEach(id=>document.getElementById(id).addEventListener('input',scheduleSave));
+}
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+loadAll();
+</script>
+</body>
+</html>
