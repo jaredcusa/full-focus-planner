@@ -1006,7 +1006,8 @@ async function loadAll(){
   annualGoals=annual; renderAnnual();
   await renderQ();
   buildRituals(rituals);
-  ['daily-notes','w-worked','w-change','w-goals','w-sleep','w-eat','w-move','w-connect','w-relax'].forEach(id=>{
+  document.getElementById('daily-notes').addEventListener('input', scheduleSave);
+  ['w-worked','w-change','w-goals','w-sleep','w-eat','w-move','w-connect','w-relax'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.addEventListener('input',()=>saveWeekly());
   });
