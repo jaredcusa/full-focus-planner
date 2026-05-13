@@ -552,8 +552,15 @@ function isToday(d){return d.toDateString()===NOW.toDateString();}
 function updateDayHeader(){
   const d=viewingDate;
   document.getElementById('today-title').textContent=DAYS[d.getDay()]+', '+MONTHS[d.getMonth()]+' '+d.getDate();
-  document.getElementById('today-sub').textContent=isToday(d)?'What are your three most important things today?':MONTHS[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
-  document.getElementById('nav-fwd').disabled=isToday(d);
+  const diff=Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()))/(1000*60*60*24));
+  let sub='';
+  if(diff===0) sub='What are your three most important things today?';
+  else if(diff===1) sub='Planning ahead — tomorrow';
+  else if(diff===-1) sub='Reviewing — yesterday';
+  else if(diff>1) sub=`Planning ahead — ${diff} days from now`;
+  else sub=`Reviewing — ${Math.abs(diff)} days ago`;
+  document.getElementById('today-sub').textContent=sub;
+  document.getElementById('nav-fwd').disabled=false;
 }
 
 window.offsetDay=async(dir)=>{
@@ -584,22 +591,34 @@ function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveAll,800
 
 // ── Big 3 ─────────────────────────────────────────────────────────────────
 let b3done=0;
+
 function buildBig3(saved){
   const wrap=document.getElementById('b3-wrap');
   wrap.innerHTML=''; b3done=0;
   ['','',''].forEach((ph,i)=>{
-    const s=saved?.[i]??{text:'',done:false};
-    if(s.done) b3done++;
+    const s=saved?.[i]??{text:'',status:0};
+    if(!s.status&&s.done) s.status=1;
+    if(s.status===1) b3done++;
+    const si=s.status||0;
+    const dimmed=si>=2;
     const row=document.createElement('div');
     row.className='ruled-row';
-    row.innerHTML=`<span class="num-label">${i+1}</span><div class="circle${s.done?' on':''}"></div><input class="ruled-input${s.done?' struck':''}" value="${esc(s.text)}" />`;
-    const c=row.querySelector('.circle'),inp=row.querySelector('.ruled-input');
-    if(s.done) c.innerHTML='✓';
-    c.addEventListener('click',()=>{
-      const on=c.classList.toggle('on');
-      c.innerHTML=on?'✓':'';
-      inp.classList.toggle('struck',on);
-      b3done+=on?1:-1; updateB3(); scheduleSave();
+    row.innerHTML=`<span class="num-label">${i+1}</span>
+      <input class="ruled-input${dimmed?' struck':''}" value="${esc(s.text)}" />
+      <button class="task-status${si?' '+STATUS_CLASSES[si]:''}" data-si="${si}">${STATUS_LABELS[si]}</button>`;
+    const inp=row.querySelector('.ruled-input');
+    const sb=row.querySelector('.task-status');
+    sb.addEventListener('click',()=>{
+      const cur=parseInt(sb.dataset.si||0);
+      const next=(cur+1)%STATUSES.length;
+      sb.dataset.si=next;
+      sb.className='task-status'+(next?' '+STATUS_CLASSES[next]:'');
+      sb.textContent=STATUS_LABELS[next];
+      inp.classList.toggle('struck',next>=2);
+      const wasDone=cur===1,nowDone=next===1;
+      if(wasDone&&!nowDone) b3done--;
+      if(!wasDone&&nowDone) b3done++;
+      updateB3(); scheduleSave();
     });
     inp.addEventListener('input',scheduleSave);
     wrap.appendChild(row);
@@ -611,9 +630,10 @@ function updateB3(){
   document.getElementById('b3-bar').style.width=Math.round(b3done/3*100)+'%';
 }
 function getB3(){
-  return [...document.getElementById('b3-wrap').querySelectorAll('.ruled-row')].map(r=>({
-    text:r.querySelector('.ruled-input').value, done:r.querySelector('.circle').classList.contains('on')
-  }));
+  return [...document.getElementById('b3-wrap').querySelectorAll('.ruled-row')].map(r=>{
+    const si=parseInt(r.querySelector('.task-status').dataset.si||0);
+    return{text:r.querySelector('.ruled-input').value,done:si===1,status:si};
+  });
 }
 
 // ── Schedule ──────────────────────────────────────────────────────────────
