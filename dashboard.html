@@ -61,6 +61,7 @@ body{background:var(--bg);font-family:var(--sans);font-size:14px;color:var(--tex
 .b3-num.done{background:var(--g);border-color:var(--g);color:#fff;}
 .b3-text{flex:1;font-family:var(--serif);font-size:15px;color:var(--text);}
 .b3-text.done{text-decoration:line-through;color:var(--text3);}
+.b3-text.dimmed{text-decoration:line-through;color:var(--text3);}
 .b3-empty{font-size:13px;color:var(--text3);font-style:italic;padding:8px 0;}
 
 /* ── Progress bar ── */
@@ -100,7 +101,7 @@ body{background:var(--bg);font-family:var(--sans);font-size:14px;color:var(--tex
 .notes-empty{font-size:13px;color:var(--text3);font-style:italic;}
 
 /* ── Date header ── */
-.date-header{display:flex;align-items:baseline;gap:12px;margin-bottom:1.75rem;}
+.date-header{display:flex;align-items:center;gap:12px;margin-bottom:1.75rem;}
 .date-big{font-family:var(--serif);font-size:24px;font-weight:normal;color:var(--text);}
 .date-week{font-size:12px;color:var(--text3);}
 
@@ -145,8 +146,15 @@ body{background:var(--bg);font-family:var(--sans);font-size:14px;color:var(--tex
 
   <main class="main">
     <div class="date-header">
-      <div class="date-big" id="d-date"></div>
-      <div class="date-week" id="d-week"></div>
+      <button onclick="dashShiftDay(-1)" style="background:none;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:14px;color:#5a5a55;flex-shrink:0;">←</button>
+      <div style="flex:1;">
+        <div class="date-big" id="d-date"></div>
+        <div class="date-week" id="d-week"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="dash-day-label" style="font-family:-apple-system,sans-serif;font-size:12px;color:#a0a098;min-width:55px;text-align:center;"></span>
+        <button onclick="dashShiftDay(1)" style="background:none;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:14px;color:#5a5a55;flex-shrink:0;">→</button>
+      </div>
     </div>
 
     <!-- Stat chips -->
@@ -279,27 +287,46 @@ if(!IS_CONFIGURED){
 
   function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+  let viewingDay=new Date(now);
+
+  function updateDashNav(){
+    const diff=Math.round((new Date(viewingDay.getFullYear(),viewingDay.getMonth(),viewingDay.getDate())-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/(1000*60*60*24));
+    document.getElementById('dash-day-label').textContent=diff===0?'Today':diff===1?'Tomorrow':diff===-1?'Yesterday':diff>1?`In ${diff} days`:`${Math.abs(diff)} days ago`;
+  }
+
+  window.dashShiftDay=async(dir)=>{
+    viewingDay=new Date(viewingDay);
+    viewingDay.setDate(viewingDay.getDate()+dir);
+    updateDashNav();
+    await loadData();
+  };
+
   window.loadData=async()=>{
+    const dk=`daily-${viewingDay.getFullYear()}-${viewingDay.getMonth()+1}-${viewingDay.getDate()}`;
     const[daily,weekly]=await Promise.all([
-      fsLoad(dateKey(now)),
+      fsLoad(dk),
       fsLoad(weekKey())
     ]);
 
     // Header
     document.getElementById('h-name').textContent=YOUR_NAME+"'s Status Dashboard";
     document.getElementById('h-sub').textContent='As of '+DAYS[now.getDay()]+', '+MONTHS[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
-    document.getElementById('d-date').textContent=DAYS[now.getDay()]+', '+MONTHS[now.getMonth()]+' '+now.getDate();
+    document.getElementById('d-date').textContent=DAYS[viewingDay.getDay()]+', '+MONTHS[viewingDay.getMonth()]+' '+viewingDay.getDate();
     document.getElementById('d-week').textContent='Week of '+weekRange();
     document.getElementById('last-updated').textContent='Updated '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    updateDashNav();
 
     // ── Daily Big 3 ──
     const b3=daily?.b3||[];
-    const b3done=b3.filter(b=>b.done).length;
+    const b3done=b3.filter(b=>b.status===1||b.done).length;
     const b3pct=b3.length?Math.round(b3done/3*100):0;
     document.getElementById('s-b3done').textContent=b3done+' / 3';
     document.getElementById('b3-pct-label').textContent=b3pct+'%';
     document.getElementById('b3-prog').style.width=b3pct+'%';
     document.getElementById('b3-prog').className='prog-fill'+(b3pct===100?'':' partial');
+
+    const B3_BADGE=['','badge-done','badge-waiting','badge-delegated','badge-deferred','badge-deleted'];
+    const B3_LABEL=['','✓ Done','/ Waiting','○ Delegated','→ Deferred','✕ Deleted'];
 
     const b3wrap=document.getElementById('d-b3');
     if(!b3.some(b=>b.text)){
@@ -307,8 +334,9 @@ if(!IS_CONFIGURED){
     } else {
       b3wrap.innerHTML=b3.map((b,i)=>b.text?`
         <div class="b3-row">
-          <div class="b3-num${b.done?' done':''}">${b.done?'✓':(i+1)}</div>
-          <div class="b3-text${b.done?' done':''}">${esc(b.text)}</div>
+          <div class="b3-num${b.status===1||b.done?' done':''}">${b.status===1||b.done?'✓':(i+1)}</div>
+          <div class="b3-text${b.status===1||b.done?' done':b.status>=2?' dimmed':''}">${esc(b.text)}</div>
+          ${b.status?`<span class="badge ${B3_BADGE[b.status]}">${B3_LABEL[b.status]}</span>`:''}
         </div>`:''
       ).join('');
     }
