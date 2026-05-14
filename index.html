@@ -988,7 +988,23 @@ async function loadDayData(){
   const daily=await storeLoad(dk,{});
   buildBig3(daily.b3??null);
   buildSched(daily.sched??null);
-  tasks=daily.tasks??[]; renderTasks();
+
+  // If this day has no tasks yet, carry over deferred tasks from the previous day
+  let dayTasks=daily.tasks??[];
+  if(dayTasks.length===0){
+    const prevDate=new Date(viewingDate);
+    prevDate.setDate(prevDate.getDate()-1);
+    const prev=await storeLoad(makeDateKey(prevDate),{});
+    const deferred=(prev.tasks??[]).filter(t=>t.status===4);
+    if(deferred.length>0){
+      // Reset status to none so they start fresh on the new day
+      dayTasks=deferred.map(t=>({...t,status:0}));
+      // Save immediately so they persist on this day
+      await storeSave(dk,{...daily,tasks:dayTasks});
+    }
+  }
+
+  tasks=dayTasks; renderTasks();
   document.getElementById('daily-notes').value=daily.notes??'';
 }
 
