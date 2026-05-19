@@ -489,43 +489,60 @@ const FIREBASE_CONFIG = {
     <div class="page" id="pg-inbox">
       <div class="page-header">
         <div class="page-title">Inbox Triage</div>
-        <div class="page-sub">Scan Outlook, extract action items, and add them directly to your planner.</div>
+        <div class="page-sub">AI scans your Outlook and sends action items here with one click.</div>
       </div>
 
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;">
-        <button class="add-btn" id="inbox-scan-btn" onclick="inboxStartScan()" style="background:#1a1a18;color:#fff;padding:8px 16px;border-radius:var(--radius-sm);border:none;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-          ⟳ Scan inbox
-        </button>
-        <select id="inbox-range" style="height:34px;padding:0 10px;font-size:13px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:var(--sans);">
-          <option value="1">Today only</option>
-          <option value="2">Last 2 days</option>
-          <option value="7" selected>Last 7 days</option>
-          <option value="14">Last 14 days</option>
-        </select>
-        <select id="inbox-filter" onchange="inboxRender()" style="height:34px;padding:0 10px;font-size:13px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:var(--sans);">
-          <option value="all">All emails</option>
-          <option value="actions">Has actions</option>
-          <option value="today">→ Today</option>
-          <option value="weekly">→ Weekly</option>
-        </select>
-        <span id="inbox-count" style="font-family:var(--sans);font-size:12px;color:var(--text3);margin-left:auto;"></span>
+      <!-- How it works -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-top"><span class="card-label">How it works</span></div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--g);color:#fff;font-family:var(--sans);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">1</div>
+            <div>
+              <div style="font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">Open your Inbox Triage chat</div>
+              <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">Click the button below to open the Claude chat that has access to your Outlook inbox.</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--g);color:#fff;font-family:var(--sans);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">2</div>
+            <div>
+              <div style="font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">Say "scan my inbox"</div>
+              <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">Claude scans your recent emails, extracts action items, and assigns each one to Today or Weekly based on urgency.</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:14px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--g);color:#fff;font-family:var(--sans);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">3</div>
+            <div>
+              <div style="font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">Click "Add to Planner" links</div>
+              <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">Claude gives you one-click links for each action item. Each link opens your planner and instantly adds the task — no copying or typing needed.</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div id="inbox-status" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--sans);font-size:13px;color:var(--text2);margin-bottom:1.25rem;">
-        <div id="inbox-spinner" style="width:14px;height:14px;border:1.5px solid var(--rule);border-top-color:#185FA5;border-radius:50%;animation:spin 0.65s linear infinite;flex-shrink:0;"></div>
-        <span id="inbox-status-text">Starting…</span>
+      <!-- Open chat button -->
+      <a href="https://claude.ai/chat/093cb69e-6607-419d-9bb1-ec3aae6aef6f" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#1a1a18;color:#fff;font-family:var(--sans);font-size:14px;font-weight:500;padding:10px 20px;border-radius:var(--radius-sm);text-decoration:none;margin-bottom:1.5rem;">
+        Open Inbox Triage in Claude ↗
+      </a>
+
+      <!-- Pending tasks injected by Claude links -->
+      <div class="card">
+        <div class="card-top">
+          <span class="card-label">Pending tasks</span>
+          <span class="card-aside" id="inbox-pending-count">0 waiting</span>
+        </div>
+        <div id="inbox-pending-list">
+          <div style="font-family:var(--sans);font-size:13px;color:var(--text3);padding:8px 0;">
+            No tasks waiting. Run a scan in Claude and click the "Add to Planner" links to populate this list.
+          </div>
+        </div>
       </div>
 
-      <div id="inbox-stats" style="display:none;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;">
-        <div class="card" style="text-align:center;padding:12px 14px;margin-bottom:0;"><div style="font-size:22px;font-weight:500;" id="is-emails">0</div><div style="font-family:var(--sans);font-size:11px;color:var(--text3);margin-top:2px;">emails scanned</div></div>
-        <div class="card" style="text-align:center;padding:12px 14px;margin-bottom:0;"><div style="font-size:22px;font-weight:500;" id="is-actions">0</div><div style="font-family:var(--sans);font-size:11px;color:var(--text3);margin-top:2px;">action items</div></div>
-        <div class="card" style="text-align:center;padding:12px 14px;margin-bottom:0;"><div style="font-size:22px;font-weight:500;" id="is-today">0</div><div style="font-family:var(--sans);font-size:11px;color:var(--text3);margin-top:2px;">→ Today</div></div>
-        <div class="card" style="text-align:center;padding:12px 14px;margin-bottom:0;"><div style="font-size:22px;font-weight:500;" id="is-weekly">0</div><div style="font-family:var(--sans);font-size:11px;color:var(--text3);margin-top:2px;">→ Weekly</div></div>
-      </div>
-
-      <div id="inbox-list" style="display:flex;flex-direction:column;gap:8px;">
-        <div style="text-align:center;padding:3rem 1rem;color:var(--text3);font-family:var(--sans);font-size:14px;">
-          Click "Scan inbox" to find action items in your Outlook emails.
+      <!-- Completed / added tasks -->
+      <div id="inbox-added-section" style="display:none;">
+        <div class="card" style="margin-top:1rem;">
+          <div class="card-top"><span class="card-label">Added this session</span></div>
+          <div id="inbox-added-list"></div>
         </div>
       </div>
     </div>
@@ -1126,262 +1143,89 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 
 loadAll();
 
-// ── INBOX TRIAGE ──────────────────────────────────────────────────────────
-const IB = { emails: [], added: new Set(), scanning: false };
+// ── INBOX TRIAGE — URL parameter receiver ────────────────────────────────
+// Claude generates links like:
+//   https://jaredcusa.github.io/full-focus-planner/?task=TASK_TEXT&dest=today
+// or  ?task=TASK_TEXT&dest=weekly
+// Opening the link lands here, reads the params, and adds the task.
 
-function ibToast(msg) {
+const IB_ADDED = [];
+
+async function ibHandleUrlTask() {
+  const params = new URLSearchParams(window.location.search);
+
+  // Batch mode: ?tasks=BASE64_JSON  (array of {text, dest})
+  // Single mode: ?task=TEXT&dest=today|weekly
+  const batchParam = params.get('tasks');
+  const singleTask = params.get('task');
+  if (!batchParam && !singleTask) return;
+
+  // Clean URL immediately so refresh doesn't re-add
+  window.history.replaceState({}, '', window.location.pathname);
+
+  let taskList = [];
+  if (batchParam) {
+    try { taskList = JSON.parse(atob(batchParam)); } catch { return; }
+  } else {
+    taskList = [{ text: decodeURIComponent(singleTask), dest: params.get('dest') || 'today' }];
+  }
+
+  // Load both stores once up front
+  const dk = makeDateKey(new Date());
+  const wk = makeWeekKeyFromStart(getWeekStartForOffset(0));
+  const daily = await storeLoad(dk, {});
+  const weekly = await storeLoad(wk, {});
+  if (!Array.isArray(daily.tasks)) daily.tasks = [];
+  if (!Array.isArray(weekly.proTasks)) weekly.proTasks = [];
+
+  for (const t of taskList) {
+    const taskObj = { id: Date.now() + Math.random(), text: t.text, status: 0, source: 'inbox-triage' };
+    if (t.dest === 'weekly') {
+      weekly.proTasks.push(taskObj);
+      IB_ADDED.push({ text: t.text, dest: 'Weekly' });
+    } else {
+      daily.tasks.push(taskObj);
+      IB_ADDED.push({ text: t.text, dest: 'Today' });
+    }
+  }
+
+  // Save both stores once
+  try {
+    await storeSave(dk, daily);
+    await storeSave(wk, weekly);
+    ibRenderAdded();
+    showPage('inbox', document.querySelector('.nav-item[onclick*="inbox"]'));
+    setTimeout(() => ibShowConfirmation(taskList.length), 100);
+  } catch (err) {
+    console.error('Inbox task write error:', err);
+  }
+}
+
+function ibShowConfirmation(count) {
   const t = document.getElementById('inbox-toast');
-  t.textContent = msg;
+  if (!t) return;
+  t.textContent = `✓ ${count} task${count !== 1 ? 's' : ''} added to your planner`;
   t.style.opacity = '1'; t.style.transform = 'translateY(0)';
   clearTimeout(t._t);
-  t._t = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(6px)'; }, 2600);
+  t._t = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(6px)'; }, 5000);
 }
 
-function ibStatus(msg, spin = true) {
-  const bar = document.getElementById('inbox-status');
-  if (!msg) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  document.getElementById('inbox-spinner').style.display = spin ? 'block' : 'none';
-  document.getElementById('inbox-status-text').textContent = msg;
+function ibRenderAdded() {
+  if (!IB_ADDED.length) return;
+  const section = document.getElementById('inbox-added-section');
+  const list = document.getElementById('inbox-added-list');
+  if (!section || !list) return;
+  section.style.display = 'block';
+  list.innerHTML = IB_ADDED.map(a => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--rule);">
+      <span style="font-family:var(--sans);font-size:11px;padding:2px 9px;border-radius:20px;background:${a.dest === 'Today' ? '#E6F1FB' : 'var(--gl)'};color:${a.dest === 'Today' ? '#0C447C' : 'var(--gd)'};font-weight:500;">${a.dest}</span>
+      <span style="font-family:var(--serif);font-size:13px;color:var(--text);">${a.text}</span>
+    </div>`).join('');
 }
 
-function ibRefreshStats() {
-  const n = IB.emails.length;
-  const statsEl = document.getElementById('inbox-stats');
-  if (!n) { statsEl.style.display = 'none'; return; }
-  let actions = 0, today = 0, weekly = 0;
-  IB.emails.forEach(e => {
-    if (e.actions) {
-      actions += e.actions.length;
-      e.actions.forEach(a => { if (a.dest === 'today') today++; else if (a.dest === 'weekly') weekly++; });
-    }
-  });
-  statsEl.style.display = 'grid';
-  document.getElementById('is-emails').textContent = n;
-  document.getElementById('is-actions').textContent = actions;
-  document.getElementById('is-today').textContent = today;
-  document.getElementById('is-weekly').textContent = weekly;
-  document.getElementById('inbox-count').textContent = n + ' emails';
-}
+// Run on page load
+ibHandleUrlTask();
 
-function inboxRender() {
-  const list = document.getElementById('inbox-list');
-  const f = document.getElementById('inbox-filter').value;
-  let emails = IB.emails;
-  if (f === 'actions') emails = emails.filter(e => e.actions && e.actions.length);
-  else if (f === 'today') emails = emails.filter(e => e.actions && e.actions.some(a => a.dest === 'today'));
-  else if (f === 'weekly') emails = emails.filter(e => e.actions && e.actions.some(a => a.dest === 'weekly'));
-
-  if (!emails.length) {
-    list.innerHTML = `<div style="text-align:center;padding:3rem 1rem;color:var(--text3);font-family:var(--sans);font-size:14px;">${IB.emails.length ? 'No emails match this filter.' : 'Click "Scan inbox" to get started.'}</div>`;
-    return;
-  }
-  list.innerHTML = emails.map(e => ibCardHtml(e)).join('');
-}
-
-function ibCardHtml(e) {
-  const hasActions = e.actions && e.actions.length > 0;
-  let badges = '';
-  if (e.analyzing) {
-    badges = `<span style="font-family:var(--sans);font-size:11px;padding:2px 9px;border-radius:20px;background:#f0efe9;color:var(--text3);animation:pulse 1s ease-in-out infinite;">analyzing…</span>`;
-  } else if (e.analyzed) {
-    if (!hasActions) {
-      badges = `<span style="font-family:var(--sans);font-size:11px;padding:2px 9px;border-radius:20px;background:#f0efe9;color:var(--text3);">no action</span>`;
-    } else {
-      if (e.actions.some(a => a.dest === 'today'))
-        badges += `<span style="font-family:var(--sans);font-size:11px;padding:2px 9px;border-radius:20px;background:#E6F1FB;color:#0C447C;font-weight:500;">today</span>`;
-      if (e.actions.some(a => a.dest === 'weekly'))
-        badges += `<span style="font-family:var(--sans);font-size:11px;padding:2px 9px;border-radius:20px;background:var(--gl);color:var(--gd);font-weight:500;margin-left:4px;">weekly</span>`;
-    }
-  }
-
-  const actionRows = e.analyzed ? (hasActions
-    ? e.actions.map((a, ai) => {
-        const key = `${e.id}-${ai}`;
-        const done = IB.added.has(key);
-        return `<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:0.5px solid var(--rule);">
-          <div style="flex:1;min-width:0;">
-            <div style="font-family:var(--serif);font-size:13px;color:var(--text);line-height:1.5;margin-bottom:3px;">${ibEsc(a.task)}</div>
-            <div style="font-family:var(--sans);font-size:11px;color:var(--text3);">${ibEsc(a.reason)}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-            <select id="ibds-${key}" onchange="ibUpdateDest('${e.id}',${ai},this.value)" style="height:28px;padding:0 8px;font-size:12px;border:0.5px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-family:var(--sans);">
-              <option value="today"${a.dest === 'today' ? ' selected' : ''}>→ Today</option>
-              <option value="weekly"${a.dest === 'weekly' ? ' selected' : ''}>→ Weekly</option>
-            </select>
-            ${done
-              ? `<span style="font-family:var(--sans);font-size:12px;color:var(--g);display:flex;align-items:center;gap:4px;">✓ Added</span>`
-              : `<button onclick="ibAddTask('${e.id}',${ai})" style="height:28px;padding:0 12px;font-size:12px;border-radius:6px;border:0.5px solid rgba(59,109,17,0.4);background:var(--gl);color:var(--gd);cursor:pointer;font-family:var(--sans);">+ Add</button>`
-            }
-          </div>
-        </div>`;
-      }).join('')
-    : `<div style="padding:10px 0;font-family:var(--sans);font-size:13px;color:var(--text3);">No action items found in this email.</div>`
-  ) : '';
-
-  return `<div style="background:var(--surface);border:0.5px solid ${hasActions ? 'rgba(59,109,17,0.3)' : 'var(--border)'};border-radius:var(--radius);overflow:hidden;" id="ibc-${e.id}">
-    <div onclick="ibToggle('${e.id}')" style="display:flex;align-items:flex-start;gap:12px;padding:13px 16px;cursor:pointer;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-      <div style="flex:1;min-width:0;">
-        <div style="font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">${ibEsc(e.from)}</div>
-        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px;" title="${ibEsc(e.subject)}">${ibEsc(e.subject)}</div>
-      </div>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;">
-        <span style="font-family:var(--sans);font-size:12px;color:var(--text3);">${ibEsc(e.date)}</span>
-        ${badges}
-        ${e.analyzed ? `<span style="font-size:12px;color:var(--text3);transition:transform 0.2s;display:inline-block;transform:${e.open ? 'rotate(180deg)' : 'rotate(0deg)'}">▾</span>` : ''}
-      </div>
-    </div>
-    ${e.open && e.analyzed ? `<div style="border-top:0.5px solid var(--rule);padding:0 16px 14px;">${actionRows}</div>` : ''}
-  </div>`;
-}
-
-function ibEsc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function ibToggle(id) {
-  const e = IB.emails.find(x => x.id === id);
-  if (!e || !e.analyzed) return;
-  e.open = !e.open;
-  inboxRender();
-}
-
-function ibUpdateDest(eid, ai, val) {
-  const e = IB.emails.find(x => x.id === eid);
-  if (e && e.actions[ai]) e.actions[ai].dest = val;
-}
-
-async function ibAnalyzeEmail(email) {
-  const prompt = `You are a productivity assistant. Analyze this business email and extract any action items that the recipient (Jared) needs to take.
-
-Email from: ${email.from}
-Subject: ${email.subject}
-Date: ${email.date}
-Body:
-${email.body}
-
-Rules:
-- Only extract tasks Jared personally needs to act on
-- Write each task as a clear, concise action under 15 words (start with a verb)
-- Assign "today" if the task is urgent, has a near deadline, or is explicitly time-sensitive
-- Assign "weekly" if it can be planned for later this week
-- Write a reason under 10 words explaining the urgency decision
-
-Respond ONLY with a JSON array. No preamble, no markdown fences. If no action items exist, return [].
-Example: [{"task":"Reply to Sarah about the Q3 contract renewal","dest":"today","reason":"Mentioned a Wednesday deadline"},{"task":"Review the new pricing proposal","dest":"weekly","reason":"No urgency indicated"}]`;
-
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
-  });
-  const data = await resp.json();
-  const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-  const clean = raw.replace(/```json|```/g, '').trim();
-  const start = clean.indexOf('[');
-  if (start < 0) return [];
-  try { return JSON.parse(clean.slice(start)); } catch { return []; }
-}
-
-async function ibFetchEmails(days) {
-  const since = new Date(Date.now() - days * 86400000).toISOString();
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: `Use the outlook_email_search tool to search for emails received since ${since}. Retrieve up to 25 emails. For each email extract: sender display name and email, subject line, received date formatted as "Weekday Mon DD" (e.g. "Mon May 19"), and the first 600 characters of the plain-text body. Return ONLY a JSON array with fields: from, subject, date, body. No preamble. No markdown. Just the JSON array.` }],
-      mcp_servers: [{ type: 'url', url: 'https://microsoft365.mcp.claude.com/mcp', name: 'microsoft365' }]
-    })
-  });
-  const data = await resp.json();
-  const blocks = data.content || [];
-  for (const block of [...blocks.filter(b => b.type === 'mcp_tool_result'), ...blocks.filter(b => b.type === 'text')]) {
-    const txt = block.content?.[0]?.text || block.text || '';
-    const idx = txt.indexOf('[');
-    if (idx >= 0) { try { const arr = JSON.parse(txt.slice(idx)); if (Array.isArray(arr) && arr.length) return arr; } catch {} }
-  }
-  return [];
-}
-
-window.inboxStartScan = async function() {
-  if (IB.scanning) return;
-  IB.scanning = true;
-  IB.emails = []; IB.added = new Set();
-  document.getElementById('inbox-scan-btn').disabled = true;
-  inboxRender(); ibRefreshStats();
-
-  const days = parseInt(document.getElementById('inbox-range').value, 10);
-  ibStatus('Connecting to Microsoft 365 and fetching emails…');
-
-  let raw = [];
-  try { raw = await ibFetchEmails(days); }
-  catch (err) {
-    ibStatus('Could not connect to Outlook. Make sure Microsoft 365 is connected in your Claude tools.', false);
-    setTimeout(() => ibStatus(null), 5000);
-    IB.scanning = false; document.getElementById('inbox-scan-btn').disabled = false; return;
-  }
-
-  if (!raw.length) {
-    ibStatus('No emails found in the selected time range.', false);
-    setTimeout(() => ibStatus(null), 4000);
-    IB.scanning = false; document.getElementById('inbox-scan-btn').disabled = false; return;
-  }
-
-  IB.emails = raw.map((e, i) => ({ id: 'ib' + i, from: e.from || 'Unknown', subject: e.subject || '(no subject)', date: e.date || '', body: e.body || '', analyzed: false, analyzing: false, open: false, actions: null }));
-  inboxRender(); ibRefreshStats();
-
-  for (let i = 0; i < IB.emails.length; i++) {
-    const email = IB.emails[i];
-    ibStatus(`Analyzing ${i + 1} of ${IB.emails.length}: "${email.subject.slice(0, 45)}…"`);
-    email.analyzing = true; inboxRender();
-    try { email.actions = await ibAnalyzeEmail(email); email.open = email.actions.length > 0; }
-    catch { email.actions = []; }
-    email.analyzed = true; email.analyzing = false;
-    ibRefreshStats(); inboxRender();
-  }
-
-  ibStatus(`Done — ${IB.emails.length} emails scanned`, false);
-  setTimeout(() => ibStatus(null), 3500);
-  IB.scanning = false; document.getElementById('inbox-scan-btn').disabled = false;
-};
-
-window.ibAddTask = async function(emailId, actionIdx) {
-  const email = IB.emails.find(e => e.id === emailId);
-  if (!email || !email.actions[actionIdx]) return;
-  const action = email.actions[actionIdx];
-  const key = `${emailId}-${actionIdx}`;
-  const destEl = document.getElementById(`ibds-${key}`);
-  const dest = destEl ? destEl.value : action.dest;
-
-  const task = { id: Date.now() + Math.random(), text: action.task, status: 0, source: 'inbox-triage' };
-
-  try {
-    if (dest === 'today') {
-      // Uses the same makeDateKey + storeLoad/storeSave as the planner
-      const dk = makeDateKey(new Date());
-      const daily = await storeLoad(dk, {});
-      if (!Array.isArray(daily.tasks)) daily.tasks = [];
-      daily.tasks.push(task);
-      await storeSave(dk, daily);
-      ibToast('Added to Today\'s task list ✓');
-    } else {
-      // Add to current week's proTasks
-      const wk = makeWeekKeyFromStart(getWeekStartForOffset(0));
-      const weekly = await storeLoad(wk, {});
-      if (!Array.isArray(weekly.proTasks)) weekly.proTasks = [];
-      weekly.proTasks.push(task);
-      await storeSave(wk, weekly);
-      ibToast('Added to Weekly professional list ✓');
-    }
-    IB.added.add(key);
-    ibRefreshStats(); inboxRender();
-  } catch (err) {
-    ibToast('Storage write failed — check console');
-    console.error('Inbox triage write error:', err);
-  }
-};
 </script>
 </body>
 </html>
