@@ -70,10 +70,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:1
 .aar-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--rule);}
 .aar-row:last-child{border-bottom:none;}
 .aar-pct-input{width:52px;font-family:var(--sans);font-size:12px;border:0.5px solid var(--border);border-radius:4px;padding:3px 6px;text-align:center;background:none;color:var(--text2);}
-.wtask-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--rule);}
+.wtask-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--rule);}
 .wtask-row:last-child{border-bottom:none;}
 
-.ruled-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--rule);}
+.ruled-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--rule);}
 .ruled-row:last-child{border-bottom:none;}
 .num-label{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--text3);width:14px;flex-shrink:0;}
 
@@ -82,10 +82,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:1
 .sq{width:7px;height:7px;border-radius:50%;background:var(--border);display:inline-block;cursor:pointer;flex-shrink:0;transition:all 0.15s;margin-top:1px;}
 .sq.on{background:var(--g);}
 
-.ruled-input{flex:1;border:none;background:none;font-family:var(--serif);font-size:15px;color:var(--text);outline:none;}
+.ruled-input{flex:1;border:none;background:none;font-family:var(--serif);font-size:15px;color:var(--text);outline:none;resize:none;overflow:hidden;line-height:1.55;min-height:1.55em;display:block;width:100%;padding:0;word-break:break-word;}
 .ruled-input::placeholder{color:var(--text3);}
 .ruled-input.struck{text-decoration:line-through;color:var(--text3);}
-.sm-input{flex:1;border:none;background:none;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;}
+.sm-input{flex:1;border:none;background:none;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;resize:none;overflow:hidden;line-height:1.55;min-height:1.55em;display:block;width:100%;padding:0;word-break:break-word;}
 .sm-input::placeholder{color:var(--text3);}
 .sm-input.struck{text-decoration:line-through;color:var(--text3);}
 .sched-time{font-family:var(--sans);font-size:11px;color:var(--text3);width:44px;flex-shrink:0;font-weight:500;}
@@ -673,7 +673,7 @@ function buildBig3(saved){
       <input class="ruled-input${dimmed?' struck':''}" value="${esc(s.text)}" />
       <button class="task-status${si?' '+STATUS_CLASSES[si]:''}" data-si="${si}">${STATUS_LABELS[si]}</button>`;
     const inp=row.querySelector('.ruled-input');
-    const sb=row.querySelector('.task-status');
+    const sb=row.querySelector('.task-status') || row.querySelector('button.task-status');
     sb.addEventListener('click',()=>{
       const cur=parseInt(sb.dataset.si||0);
       const next=(cur+1)%STATUSES.length;
@@ -698,7 +698,7 @@ function updateB3(){
 function getB3(){
   return [...document.getElementById('b3-wrap').querySelectorAll('.ruled-row')].map(r=>{
     const si=parseInt(r.querySelector('.task-status').dataset.si||0);
-    return{text:r.querySelector('.ruled-input').value,done:si===1,status:si};
+    return{text:r.querySelector('.ruled-input').value||r.querySelector('textarea.ruled-input')?.value||'',done:si===1,status:si};
   });
 }
 
@@ -731,13 +731,14 @@ function renderTasks(){
     const isDimmed=si===4||si===5; // deferred or deleted
     const row=document.createElement('div');
     row.className='ruled-row';
-    row.innerHTML=`
-      <input class="sm-input${isDimmed?' dimmed':''}" placeholder="Task…" value="${esc(t.text||'')}" />
-      <button class="task-status${si?' '+STATUS_CLASSES[si]:''}">${STATUS_LABELS[si]}</button>
-      <button class="task-del">✕</button>`;
-    const inp=row.querySelector('.sm-input');
-    const sb=row.querySelector('.task-status');
-    const db=row.querySelector('.task-del');
+    row.innerHTML='';
+    const tinp=makeTA('sm-input'+(isDimmed?' dimmed':''),'Task…',t.text||'');
+    const tsb=document.createElement('button');tsb.className='task-status'+(si?' '+STATUS_CLASSES[si]:'');tsb.textContent=STATUS_LABELS[si];
+    const tdb=document.createElement('button');tdb.className='task-del';tdb.textContent='✕';
+    row.appendChild(tinp);row.appendChild(tsb);row.appendChild(tdb);
+    const inp=tinp;
+    const sb=tsb;
+    const db=tdb;
     inp.addEventListener('input',()=>{tasks[i].text=inp.value;scheduleSave();});
     sb.addEventListener('click',()=>{
       tasks[i].status=((tasks[i].status||0)+1)%STATUSES.length;
@@ -769,7 +770,11 @@ function buildCircleList(wrapId,phs,saved){
     const s=saved?.[i]??{text:'',done:false};
     const row=document.createElement('div');
     row.className='ruled-row';
-    row.innerHTML=`<span class="num-label">${i+1}</span><div class="circle${s.done?' on':''}"></div><input class="ruled-input${s.done?' struck':''}" placeholder="${ph}" value="${esc(s.text)}" />`;
+    row.innerHTML='';
+    const nl2=document.createElement('span');nl2.className='num-label';nl2.textContent=i+1;
+    const circ=document.createElement('div');circ.className='circle'+(s.done?' on':'');if(s.done)circ.innerHTML='✓';
+    const ta2=makeTA('ruled-input'+(s.done?' struck':''),ph,s.text||'');
+    row.appendChild(nl2);row.appendChild(circ);row.appendChild(ta2);
     const c=row.querySelector('.circle'),inp=row.querySelector('.ruled-input');
     if(s.done) c.innerHTML='✓';
     c.addEventListener('click',()=>{const on=c.classList.toggle('on');c.innerHTML=on?'✓':'';inp.classList.toggle('struck',on);scheduleSave();});
@@ -779,7 +784,7 @@ function buildCircleList(wrapId,phs,saved){
 }
 function getCircleList(wrapId){
   return[...document.getElementById(wrapId).querySelectorAll('.ruled-row')].map(r=>({
-    text:r.querySelector('.ruled-input').value,done:r.querySelector('.circle').classList.contains('on')
+    text:(r.querySelector('textarea.ruled-input')||r.querySelector('.ruled-input')||{value:''}).value,done:r.querySelector('.circle').classList.contains('on')
   }));
 }
 function buildDotList(wrapId,count,ph,saved){
@@ -788,12 +793,15 @@ function buildDotList(wrapId,count,ph,saved){
   for(let i=0;i<count;i++){
     const row=document.createElement('div');
     row.className='ruled-row';
-    row.innerHTML=`<div class="win-dot"></div><input class="sm-input" placeholder="${ph}" value="${esc(saved?.[i]??'')}" />`;
-    row.querySelector('.sm-input').addEventListener('input',scheduleSave);
+    row.innerHTML='';
+    const wd=document.createElement('div');wd.className='win-dot';
+    const ta3=makeTA('sm-input',ph,saved?.[i]||'');
+    ta3.addEventListener('input',scheduleSave);
+    row.appendChild(wd);row.appendChild(ta3);
     wrap.appendChild(row);
   }
 }
-function getDotList(wrapId){return[...document.getElementById(wrapId).querySelectorAll('.sm-input')].map(i=>i.value);}
+function getDotList(wrapId){return[...document.getElementById(wrapId).querySelectorAll('textarea.sm-input,.sm-input')].map(i=>i.value);}
 
 // ── Quarterly ─────────────────────────────────────────────────────────────
 let currentQ=1;
@@ -1006,12 +1014,14 @@ function renderWeeklyTasks(type){
     const row=document.createElement('div');
     row.className='wtask-row';
     const si=t.status||0;
-    row.innerHTML=`<input class="sm-input" placeholder="Task…" value="${esc(t.text||'')}" style="flex:1;" />
-      <button class="task-status${si?' '+STATUS_CLASSES[si]:''}" style="font-size:10px;padding:1px 6px;">${STATUS_LABELS[si]}</button>
-      <button class="task-del">✕</button>`;
-    const inp=row.querySelector('.sm-input');
-    const sb=row.querySelector('.task-status');
-    const db=row.querySelector('.task-del');
+    row.innerHTML='';
+    const winp=makeTA('sm-input','Task…',t.text||'','flex:1;');
+    const wsb=document.createElement('button');wsb.className='task-status'+(si?' '+STATUS_CLASSES[si]:'');wsb.style.cssText='font-size:10px;padding:1px 6px;';wsb.textContent=STATUS_LABELS[si];
+    const wdb=document.createElement('button');wdb.className='task-del';wdb.textContent='✕';
+    row.appendChild(winp);row.appendChild(wsb);row.appendChild(wdb);
+    const inp=tinp;
+    const sb=tsb;
+    const db=tdb;
     inp.addEventListener('input',()=>{arr[i].text=inp.value;saveWeekly();});
     sb.addEventListener('click',()=>{arr[i].status=((arr[i].status||0)+1)%STATUSES.length;renderWeeklyTasks(type);saveWeekly();});
     db.addEventListener('click',()=>{arr.splice(i,1);renderWeeklyTasks(type);saveWeekly();});
@@ -1140,6 +1150,19 @@ async function renderCalendar(){
 }
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+function makeTA(cls, placeholder, value, extraStyle=''){
+  const ta=document.createElement('textarea');
+  ta.className=cls;
+  ta.placeholder=placeholder||'';
+  ta.value=value||'';
+  if(extraStyle) ta.style.cssText=extraStyle;
+  ta.rows=1;
+  ta.addEventListener('input',()=>autoResize(ta));
+  setTimeout(()=>autoResize(ta),0);
+  return ta;
+}
 
 loadAll();
 
